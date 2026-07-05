@@ -20,19 +20,19 @@ def analyze_catalog_health(products: list[Product]):
 
         if not product.product_url:
             summary["missing_url"] += 1
-            issues.append(
-                {
-                    "Product ID": product.product_id,
-                    "Issue": "Missing Product URL"
-                }
-            )
+            issues.append({
+                "product_id": product.product_id,
+                "severity": "Critical",
+                "issue": "Missing URL"
+            })
 
         if not product.description:
             summary["missing_description"] += 1
             issues.append(
                 {
-                    "Product ID": product.product_id,
-                    "Issue": "Missing Description"
+                    "product_id": product.product_id,
+                    "severity": "Warning",
+                    "issue": "Missing Description"
                 }
             )
 
@@ -40,8 +40,9 @@ def analyze_catalog_health(products: list[Product]):
             summary["missing_vendor"] += 1
             issues.append(
                 {
-                    "Product ID": product.product_id,
-                    "Issue": "Missing Vendor"
+                    "product_id": product.product_id,
+                    "severity": "Warning",
+                    "issue": "Missing Vendor"
                 }
             )
 
@@ -49,8 +50,9 @@ def analyze_catalog_health(products: list[Product]):
             summary["missing_category"] += 1
             issues.append(
                 {
-                    "Product ID": product.product_id,
-                    "Issue": "Missing Category"
+                    "product_id": product.product_id,
+                    "severity": "Warning",
+                    "issue": "Missing Category"
                 }
             )
 
@@ -58,8 +60,9 @@ def analyze_catalog_health(products: list[Product]):
             summary["missing_image"] += 1
             issues.append(
                 {
-                    "Product ID": product.product_id,
-                    "Issue": "Missing Image"
+                    "product_id": product.product_id,
+                    "severity": "Critical",
+                    "issue": "Missing Image"
                 }
             )
 
@@ -67,8 +70,9 @@ def analyze_catalog_health(products: list[Product]):
             summary["missing_tags"] += 1
             issues.append(
                 {
-                    "Product ID": product.product_id,
-                    "Issue": "Missing Tags"
+                    "product_id": product.product_id,
+                    "severity": "Warning",
+                    "issue": "Missing Tags"
                 }
             )
 
@@ -76,8 +80,9 @@ def analyze_catalog_health(products: list[Product]):
             summary["missing_product_type"] += 1
             issues.append(
                 {
-                    "Product ID": product.product_id,
-                    "Issue": "Missing Product Type"
+                    "product_id": product.product_id,
+                    "severity": "Critical",
+                    "issue": "Missing Product Type"
                 }
             )
 
@@ -85,9 +90,22 @@ def analyze_catalog_health(products: list[Product]):
             summary["missing_inventory"] += 1
             issues.append(
                 {
-                    "Product ID": product.product_id,
-                    "Issue": "Missing Inventory"
+                    "product_id": product.product_id,
+                    "severity": "Warning",
+                    "issue": "Missing Inventory"
                 }
             )
+
+        severity_order = {
+            "Critical": 0,
+            "Warning": 1
+        }
+
+        issues.sort(
+            key=lambda issue: (
+                severity_order[issue["severity"]],
+                issue["product_id"]
+            )
+        )
 
     return summary, issues

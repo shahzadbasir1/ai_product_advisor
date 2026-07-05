@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 import os
 import traceback
+import json
 
 from ingestion.json_loader import load_products_json
 from validation.validators import validate_product
 from analysis.catalog_summary import generate_catalog_summary
 from analysis.catalog_health import analyze_catalog_health
+import analysis.catalog_health as ch
 from storage.catalog_repository import (
     save_catalog,
     save_uploaded_catalog
@@ -19,8 +21,10 @@ from tools.ai_tag_generator import generate_tags
 from tools.ai_image_search import get_image_search_url
 from tools.ai_product_reviewer import review_product
 from analysis.catalog_score import calculate_catalog_score
+from datetime import datetime
 
 import inspect
+MASTER_CATALOG = "data/catalogs/master_catalog.json"
 
 # print("=" * 60)
 # print("Imported from:", inspect.getsourcefile(calculate_catalog_score))
@@ -28,14 +32,30 @@ import inspect
 # print("First line  :", calculate_catalog_score.__code__.co_firstlineno)
 # print("=" * 60)
 
+# print("=" * 60)
+# print("catalog_health module:")
+# print(ch.__file__)
+# print("=" * 60)
+
 st.set_page_config(
     page_title="AI Product Advisor"
 )
 import analysis.catalog_score as cs
 
-#st.write(cs.__file__)
+import sys
+import os
+
+import inspect
+from analysis import catalog_health
+
+# st.code(
+#     inspect.getsource(catalog_health.analyze_catalog_health),
+#     language="python"
+# )
 
 st.title("AI Product Advisor")
+
+st.error("THIS IS THE APP.PY I AM EDITING")
 
 uploaded_file = st.file_uploader(
     "Upload Catalog",
@@ -47,14 +67,6 @@ if uploaded_file:
     st.success(
         "File uploaded successfully"
     )
-
-    # st.write(
-    #     f"File Name: {uploaded_file.name}"
-    # )
-
-    # st.write(
-    #     f"File Size: {uploaded_file.size} bytes"
-    # )
 
     if uploaded_file.name.endswith(".json"):
 
@@ -70,11 +82,6 @@ if uploaded_file:
         catalog_path = (
             st.session_state.catalog_path
         )
-
-        # st.write(
-        #     f"Temporary File: {catalog_path}"
-        # )
-
         try:
 
             products = load_products_json(
@@ -95,28 +102,6 @@ if uploaded_file:
                     errors
                 )
 
-            # st.subheader(
-            #     "Upload Results"
-            # )
-
-            # st.write(
-            #     f"Products Loaded: {len(products)}"
-            # )
-
-            # st.write(
-            #     f"Validation Errors: {len(validation_errors)}"
-            # )
-
-            if validation_errors:
-
-                st.error(
-                    "Validation Errors Found"
-                )
-
-                for error in validation_errors:
-
-                    st.write(error)
-
             summary = generate_catalog_summary(
                 products
             )
@@ -125,142 +110,149 @@ if uploaded_file:
                 products
             )
 
-            # st.write("Health Summary:")
-            # st.write(health_summary)
+# #07/03/26
+#             json_data = json.dumps(
+#                 [product.model_dump() for product in products],
+#                 indent=2,
+#                 default=str
+#             )
 
-            # st.write(type(health_summary))
+#             st.download_button(
+#                 "⬇ Download Updated Catalog",
+#                 data=json_data,
+#                 file_name="updated_catalog.json",
+#                 mime="application/json"
+#             )
+# #07/03/26
+#07/05/26
+            # # st.subheader("📈 Catalog Improvement Summary")
 
-            # st.write("Keys:")
-            # st.write(list(health_summary.keys()))
+            # # average_score = (
+            # #     sum(
+            # #         calculate_product_score(product)["overall_score"]
+            # #         for product in products
+            # #     )
+            # #     / len(products)
+            # # )
 
-            # st.json(health_summary)
+            # # st.metric(
+            # #     "Overall Catalog Score",
+            # #     f"{average_score:.0f}/100"
+            # # )
 
-            # print("HEALTH SUMMARY =", health_summary)
-            # print("TYPE =", type(health_summary))
-            # print("KEYS =", health_summary.keys())
+            # # ready_products = sum(
+            # #     1
+            # #     for product in products
+            # #     if calculate_product_score(product)["overall_score"] >= 90
+            # # )
 
-            # import inspect
+            # # st.metric(
+            # #     "Products Ready",
+            # #     f"{ready_products} / {len(products)}"
+            # # )    
 
-            # st.write("Function object:")
-            # st.write(calculate_catalog_score)
+            # # for i, issue in enumerate(health_issues):
+            # #     st.write(i, issue)
 
-            # st.write("Module:")
-            # st.write(calculate_catalog_score.__module__)
+            # # st.write(id(health_issues))                        
+            # # critical_count = sum(
+            # #     1
+            # #     for issue in health_issues
+            # #     if issue["severity"] == "Critical"
+            # # )
 
-            # st.write("Source file:")
-            # st.write(inspect.getsourcefile(calculate_catalog_score))
+            # # warning_count = sum(
+            # #     1
+            # #     for issue in health_issues
+            # #     if issue["severity"] == "Warning"
+            # # )            
 
-            # st.write("Signature:")
-            # st.code(str(inspect.signature(calculate_catalog_score)))
+            # # col1, col2 = st.columns(2)
 
-            # st.write("Actual source Python imported:")
-            # st.code(inspect.getsource(calculate_catalog_score))
+            # # with col1:
+            # #     st.metric(
+            # #         "🔴 Critical Issues",
+            # #         critical_count
+            # #     )
 
-            # import inspect
+            # # with col2:
+            # #     st.metric(
+            # #         "🟡 Warning Issues",
+            # #         warning_count
+            # #     )           
 
-            # st.write("Signature:", inspect.signature(calculate_catalog_score))
-            # st.write("__signature__:", getattr(calculate_catalog_score, "__signature__", None))
-            # st.write("__defaults__:", calculate_catalog_score.__defaults__)
-            # st.write("Argument count:", calculate_catalog_score.__code__.co_argcount)
-            # st.write("Variable names:", calculate_catalog_score.__code__.co_varnames)
+            # st.subheader("Highest Priorities")
+            # if health_summary["missing_image"]:
 
-            # st.write("Calling with ONE argument...")
+            #     st.error(
+            #         f"Upload images for "
+            #         f"{health_summary['missing_image']} products."
+            #     )
+
+            # if health_summary["missing_url"]:
+
+            #     st.error(
+            #         f"Add Product URLs for "
+            #         f"{health_summary['missing_url']} products."
+            #     )
+
+            # if health_summary["missing_tags"]:
+
+            #     st.warning(
+            #         f"Generate SEO Tags for "
+            #         f"{health_summary['missing_tags']} products."
+            #     )
+
+            # if health_summary["missing_description"]:
+
+            #     st.warning(
+            #         f"Generate AI Descriptions for "
+            #         f"{health_summary['missing_description']} products."
+            #     )
+
+            # if health_summary["missing_product_type"]:
+
+            #     st.warning(
+            #         f"Complete Product Type for "
+            #         f"{health_summary['missing_product_type']} products."
+            #     )
+
+            # potential_score = min(
+            #     average_score + 20,
+            #     100
+            # )
+
+            # st.metric(
+            #     "Potential Catalog Score",
+            #     f"{potential_score:.0f}/100"
+            # )    
+#07/05/26
+
+            import inspect
+
+
+            import inspect
 
             try:
                 result = calculate_catalog_score(health_summary)
-                # st.success("One-argument call succeeded")
-                # st.write(result)
             except Exception as e:
                 st.error(e)
 
-#            st.write("Calling with TWO arguments...")
-
-#             try:
-#                 result = calculate_catalog_score(summary, health_summary)
-# #                st.success("Two-argument call succeeded")
-# #                st.write(result)
-#             except Exception as e:
-#                 st.error(e)
-
             import analysis.catalog_score as cs
 
-            # st.write("Module object:")
-            # st.write(cs)
+            import inspect
 
-            # st.write("Module dict entry:")
-            # st.write(cs.__dict__["calculate_catalog_score"])
-
-            # import inspect
-
-            # st.write("Source file:")
-            # st.write(inspect.getfile(cs.calculate_catalog_score))
-
-            # st.write("Source lines:")
-            # st.code(
-            #     "".join(
-            #         inspect.getsourcelines(cs.calculate_catalog_score)[0]
-            #     )
-            # )
-
-            # st.write(id(calculate_catalog_score))
-            # st.write(id(cs.calculate_catalog_score))
-
-            # import inspect
-
-            # st.write("Function object:", calculate_catalog_score)
-
-            # st.write("__signature__ exists:",
-            #         hasattr(calculate_catalog_score, "__signature__"))
-
-            # st.write("__signature__ value:",
-            #         getattr(calculate_catalog_score, "__signature__", None))
-
-            # st.write("__wrapped__ exists:",
-            #         hasattr(calculate_catalog_score, "__wrapped__"))
-
-            # st.write("__wrapped__:",
-            #         getattr(calculate_catalog_score, "__wrapped__", None))
-
-            # st.write("Code argcount:",
-            #         calculate_catalog_score.__code__.co_argcount)
-
-            # st.write("Code varnames:",
-            #         calculate_catalog_score.__code__.co_varnames)
-
-            # st.write("Defaults:",
-            #         calculate_catalog_score.__defaults__)
+            import inspect
 
             import analysis.catalog_score as cs
 
             import sys
 
-            # st.write("Module ID:")
-            # st.write(id(cs))
-
-            # st.write("Module in sys.modules:")
-            # st.write(id(sys.modules["analysis.catalog_score"]))
-
-            # st.write("Same object?")
-            # st.write(cs is sys.modules["analysis.catalog_score"])
-
-            # st.write("Module file:")
-            # st.write(cs.__file__)
-
-            # import dis
-
-            # # st.subheader("Disassembly")
-
-            # disassembly = dis.Bytecode(cs.calculate_catalog_score)
-
-            # for instruction in disassembly:
-            #     st.text(instruction)            
+            import dis
 
             catalog_score = calculate_catalog_score(
                 health_summary
             )
-
-            # st.write("After calculate_catalog_score")
-            # st.write(catalog_score)
 
             st.subheader(
                 "Catalog Summary"
@@ -356,25 +348,12 @@ if uploaded_file:
 
             if health_issues:
 
-                issue_df = pd.DataFrame(health_issues)
+                issues_df = pd.DataFrame(health_issues)
 
-                issue_df = issue_df.sort_values(
-                    by=["product_id", "severity", "issue"]
-                )
-
-                issue_df = issue_df.rename(
-                    columns={
-                        "product_id": "Product ID",
-                        "severity": "Severity",
-                        "issue": "Issue"
-                    }
-                )
-                
                 st.dataframe(
-                    issue_df,
-                    width="stretch"
+                    issues_df,
+                    use_container_width=True
                 )
-
             else:
 
                 st.success(
@@ -393,6 +372,7 @@ if uploaded_file:
                         "Category": product.category,
                         "Price": product.price,
                         "Status": product.status,
+                        "Score": f"{calculate_product_score(product)['overall_score']}/100",
                         "Product URL": product.product_url or ""
                     }
                 )
@@ -412,24 +392,10 @@ if uploaded_file:
 
             st.subheader("Select Product")
 
-            product_options = {
-                f"{p.product_id} | {p.title}": p.product_id
-                for p in products
-            }
-
-            # selected_product = next(
-            selected_display = st.selectbox(
+            selected_product_id = st.selectbox(
                 "Product",
-                list(product_options.keys())
+                df["Product ID"]
             )
-
-    #     (
-            #         p for p in products
-            #         if p.product_id == selected_product_id
-            #     ),
-            #     None
-            # )
-            selected_product_id = product_options[selected_display]
 
             selected_product = next(
                 (
@@ -440,18 +406,23 @@ if uploaded_file:
             )
 
             if selected_product:
+
                 st.subheader("Product Detail")
 
                 st.write(f"Product ID: {selected_product.product_id}")
                 st.write(f"Title: {selected_product.title}")
-                st.write(f"Description: {selected_product.description}")
                 st.write(f"Vendor: {selected_product.vendor}")
                 st.write(f"Category: {selected_product.category}")
                 st.write(f"Price: {selected_product.price}")
-                st.write(f"Product URL: {selected_product.product_url}")
-                st.write(f"Inventory: {selected_product.inventory_qty}")
-                st.write(f"Image: {selected_product.image_url}")
-                st.write(f"Tags: {selected_product.tags}")
+                if selected_product.product_url:
+
+                    st.link_button(
+                        "🔗 Open Product",
+                        selected_product.product_url
+                    )
+                    
+                if selected_product.image_url:
+                    st.caption(selected_product.image_url)
 
                 st.subheader("Product Image")
 
@@ -495,6 +466,7 @@ if uploaded_file:
                             f.write(uploaded_image.getbuffer())
 
                         selected_product.image_url = image_path
+                        selected_product.updated_datetime = datetime.now()
 
                         save_catalog(
                             products,
@@ -610,9 +582,6 @@ if uploaded_file:
 
                             review = review_product(selected_product)
 
-                            # st.write("Type:", type(review))
-                            # st.write(review)
-
                         except Exception as e:
 
                             import traceback
@@ -623,12 +592,6 @@ if uploaded_file:
                                 language="python"
                             )
 
-                        # st.write("Function:", review_product)
-                        # st.write("Module:", review_product.__module__)
-
-                        # st.write(type(review))
-                        # st.write(review.keys())                        
-                        # st.write(review)
                         st.subheader(
                             review["rating"]
                         )
@@ -666,18 +629,18 @@ if uploaded_file:
                             "AI Suggestions"
                         )
 
-                        st.json(review)    
+#                        st.json(review)    
 
                 ##################################################
                 # AI Description Generator
                 ##################################################
 
                 description_key = (
-                    f"generated_desc_{selected_product.product_id}"
+                    f"description_{selected_product.product_id}"
                 )
 
                 tag_key = (
-                    f"generated_tags_{selected_product.product_id}"
+                    f"tags_{selected_product.product_id}"
                 )
 
                 if st.button(
@@ -712,6 +675,8 @@ if uploaded_file:
                         key=f"ai_desc_{selected_product.product_id}"
                     )
 
+                st.success("REACHED AI EDIT SECTION")
+
                 if st.button(
                     "✨ Generate SEO Tags",
                     key=f"generate_tags_{selected_product.product_id}"
@@ -733,113 +698,123 @@ if uploaded_file:
                             temp_product
                         )
 
+                ##################################################
+                # Product Edit Form
+                ##################################################
+
+                with st.form(
+                    f"product_form_{selected_product.product_id}"
+                ):
+
                     ##################################################
-                    # Product Edit Form
+                    # Description
                     ##################################################
 
-                        # with st.form(
-                        #     f"product_form_{selected_product.product_id}"
-                        # ):
-
-                ##################################################
-                # Description
-                ##################################################
-
-                description = st.text_area(
-                    "Description",
-                    value=(
-                        st.session_state.get(
-                            description_key,
-                            selected_product.description or ""
-                        )
-                    ),
-                    height=220
-                )
-
-                ##################################################
-                # Product URL
-                ##################################################
-
-                new_url = st.text_input(
-                    "Product URL",
-                    value=selected_product.product_url or ""
-                )
-
-                ##################################################
-                # Inventory
-                ##################################################
-
-                inventory = st.number_input(
-                    "Inventory Quantity",
-                    min_value=0,
-                    value=selected_product.inventory_qty or 0,
-                    step=1
-                )
-
-                ##################################################
-                # Product Type
-                ##################################################
-
-                product_type = st.text_input(
-                    "Product Type",
-                    value=selected_product.product_type or ""
-                )
-
-                ##################################################
-                # SEO Tags
-                ##################################################
-
-                tag_string = st.text_input(
-                    "SEO Tags (comma separated)",
-                    value=", ".join(
-
-                        st.session_state.get(
-
-                            tag_key,
-
-                            selected_product.tags
-
-                        )
-
-                    )
-                )
-
-                ##################################################
-                # Save Button
-                ##################################################
-
-                # submitted = st.form_submit_button(
-                #     "Save Changes"
-                # )
-
-                col1, col2 = st.columns(2)
-
-                ##################################################
-                # Save / Download Buttons
-                ##################################################
-
-                col1, col2 = st.columns(2)
-
-                with col1:
-
-                    save_clicked = st.button(
-                        "💾 Save Changes",
-                        use_container_width=True
+                    description = st.text_area(
+                        "Description",
+                        value=(
+                            st.session_state.get(
+                                description_key,
+                                selected_product.description or ""
+                            )
+                        ),
+                        height=220
                     )
 
-                with col2:
+                    ##################################################
+                    # Product URL
+                    ##################################################
 
-                    with open(catalog_path, "rb") as file:
+                    new_url = st.text_input(
+                        "URL",
+                        value=selected_product.product_url or ""
+                    )
 
-                        st.download_button(
-                            "⬇ Download Updated Catalog",
-                            data=file,
-                            file_name=os.path.basename(catalog_path),
-                            mime="application/json",
-                            use_container_width=True
+                    ##################################################
+                    # Inventory
+                    ##################################################
+
+                    new_inventory = st.number_input(
+                        "Inventory Quantity",
+                        min_value=0,
+                        value=selected_product.inventory_qty or 0
+                    )
+
+                    ##################################################
+                    # Product Type
+                    ##################################################
+
+                    new_product_type = st.text_input(
+                        "Product Type",
+                        value=selected_product.product_type or ""
+                    )
+
+                    ##################################################
+                    # SEO Tags
+                    ##################################################
+
+                    tag_string = st.text_input(
+                        "SEO Tags (comma separated)",
+                        value=", ".join(
+
+                            st.session_state.get(
+
+                                tag_key,
+
+                                selected_product.tags
+
+                            )
+
+                        )
+                    )
+
+
+                    ##################################################
+                    # Save Button
+                    ##################################################
+
+                    submitted = st.form_submit_button(
+                        "💾 Save Changes"
+                    )
+
+                    if submitted:
+                        selected_product.description = description
+
+                        #selected_product.product_url = new_url
+                        ##################################################
+                        # Product URL
+                        ##################################################
+
+                        selected_product.product_url = new_url.strip()
+
+                        selected_product.inventory_qty = new_inventory
+
+                        selected_product.product_type = new_product_type.strip()
+
+                        selected_product.tags = [
+                            tag.strip()
+                            for tag in tag_string.split(",")
+                            if tag.strip()
+                        ]
+                        selected_product.updated_datetime = datetime.now()
+                        if selected_product.updated_datetime:
+                            st.caption(
+                                f"Last Updated: {selected_product.updated_datetime:%d %b %Y %I:%M %p}"
+                            )
+
+
+                        save_catalog(
+                            products,
+                            catalog_path
                         )
 
-                if save_clicked:
+                        st.success(
+                            "Product updated successfully."
+                        )
+
+                        st.rerun()
+
+                if submitted:
                     ##################################################
                     # Description
                     ##################################################
@@ -850,31 +825,18 @@ if uploaded_file:
                     # URL
                     ##################################################
 
-                    new_url = new_url.strip()
-
-                    if (
-                        new_url
-                        and not new_url.startswith(("http://", "https://"))
-                    ):
-                        new_url = "https://" + new_url
-
-                    selected_product.product_url = new_url
-
                     ##################################################
                     # Inventory
                     ##################################################
-
-                    selected_product.inventory_qty = inventory
 
                     ##################################################
                     # Product Type
                     ##################################################
 
-                    selected_product.product_type = product_type.strip()
-
                     ##################################################
                     # SEO Tags
                     ##################################################
+                    selected_product.updated_datetime = datetime.now()
 
                     selected_product.tags = [
 
@@ -889,6 +851,7 @@ if uploaded_file:
                     ##################################################
                     # Save JSON
                     ##################################################
+                    selected_product.updated_datetime = datetime.now()
 
                     save_catalog(
                         products,
@@ -906,7 +869,6 @@ if uploaded_file:
                     )
 
                     st.rerun()
-
 
         except Exception:
             st.exception(traceback.format_exc())

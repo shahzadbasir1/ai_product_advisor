@@ -1,0 +1,57 @@
+[
+  {
+    "product_id": "SKU001",
+    "title": "Moisture Control Shampoo",
+    "description": "Moisture Control Shampoo by Oribe is a premium product designed for customers looking for high-quality hair care products.\n\nThis product helps improve overall hair health while providing excellent performance and long-lasting results. It is suitable for everyday use and works well for customers seeking healthier, softer and more manageable hair.\n\nKey Benefits\n\n\u2022 Nourishes and protects hair\n\u2022 Helps improve appearance and texture\n\u2022 Suitable for regular use\n\u2022 High quality ingredients\n\u2022 Trusted Oribe quality\n\nRecommended For\n\nCustomers looking for reliable hair care solutions.\n\nKeywords:",
+    "vendor": "Oribe",
+    "category": "Hair Care",
+    "price": 42.0,
+    "status": "active",
+    "product_url": "https://www.yahoo.com/123456",
+    "handle": null,
+    "product_type": "Shampoo",
+    "tags": [
+      "Hair Care",
+      "Shampoo",
+      "Oribe",
+      "Moisturizing",
+      "Soft Hair",
+      "Great"
+    ],
+    "inventory_qty": 0,
+    "compare_at_price": null,
+    "image_url": "data/images/SKU001.jpg",
+    "published": null,
+    "variants": [],
+    "source_catalog_id": "CAT001",
+    "updated_datetime": null,
+    "updated_by": null
+  },
+  {
+    "product_id": "SKU002",
+    "title": "Gold Lust Shampoo",
+    "description": "Gold Lust Shampoo by Loreal is a premium product designed for customers looking for high-quality hair care products.\n\nThis product helps improve overall hair health while providing excellent performance and long-lasting results. It is suitable for everyday use and works well for customers seeking healthier, softer and more manageable hair.\n\nKey Benefits\n\n\u2022 Nourishes and protects hair\n\u2022 Helps improve appearance and texture\n\u2022 Suitable for regular use\n\u2022 High quality ingredients\n\u2022 Trusted Loreal quality\n\nRecommended For\n\nCustomers looking for reliable hair care solutions.\n\nKeywords:",
+    "vendor": "Loreal",
+    "category": "Hair Care",
+    "price": 48.0,
+    "status": "active",
+    "product_url": "https://www.ebay.com/1234567890",
+    "handle": null,
+    "product_type": "Shampoo",
+    "tags": [
+      "Hair Care",
+      "Loreal",
+      "Shampoo",
+      "Premium",
+      "Soft Hair"
+    ],
+    "inventory_qty": 1,
+    "compare_at_price": null,
+    "image_url": "data/images/SKU002.jpg",
+    "published": null,
+    "variants": [],
+    "source_catalog_id": "CAT001",
+    "updated_datetime": null,
+    "updated_by": null
+  }
+]
