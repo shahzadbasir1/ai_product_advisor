@@ -1,0 +1,25 @@
+[
+  {
+    "product_id": "SKU001",
+    "title": "Moisture Control Shampoo",
+    "description": "Controls frizz and hydrates dry hair.",
+    "vendor": "Oribe",
+    "category": "Hair Care",
+    "price": 42.00,
+    "status": "active",
+    "product_url": "",
+    "source_catalog_id": "CAT001"
+  },
+
+  {
+    "product_id": "SKU002",
+    "title": "Gold Lust Shampoo",
+    "description": "Repairs damaged hair.",
+    "vendor": "Loreal",
+    "category": "Hair Care",
+    "price": 48.00,
+    "status": "active",
+    "product_url": "",
+    "source_catalog_id": "CAT001"
+  }
+]
