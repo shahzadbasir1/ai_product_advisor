@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
-
+from models.product_metadata import ProductAIMetadata
 
 class ProductVariant(BaseModel):
     sku: str
@@ -49,3 +49,8 @@ class Product(BaseModel):
     updated_datetime: Optional[datetime] = None
 
     updated_by: Optional[str] = None
+
+    #Added 07/07/26
+    
+
+

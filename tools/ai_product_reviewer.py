@@ -115,6 +115,36 @@ def review_product(product):
 
         "weaknesses": weaknesses,
 
-        "recommendations": recommendations
+        "recommendations": recommendations,
+
+        ####################################################
+        # Planning decisions
+        ####################################################
+
+        "needs_description":
+            len(
+                [
+                    w for w in weaknesses
+                    if "Description" in w
+                ]
+            ) > 0,
+
+        "needs_tags":
+            len(
+                [
+                    w for w in weaknesses
+                    if "SEO" in w
+                ]
+            ) > 0,
+
+        "needs_image_review":
+            len(
+                [
+                    w for w in weaknesses
+                    if "image" in w.lower()
+                ]
+            ) > 0,
+
+        "next_agents": []
 
     }

@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import traceback
+import requests
 
 from ingestion.json_loader import load_products_json
 from validation.validators import validate_product
@@ -16,9 +17,15 @@ from analysis.product_score import (
 )
 from tools.ai_description_generator import generate_description
 from tools.ai_tag_generator import generate_tags
+from tools.ai_product_type_generator import generate_product_type
 from tools.ai_image_search import get_image_search_url
 from tools.ai_product_reviewer import review_product
 from analysis.catalog_score import calculate_catalog_score
+from api_client import (
+    generate_description_api,
+    generate_tags_api,
+    generate_product_type_api
+)
 
 import inspect
 
@@ -380,55 +387,213 @@ if uploaded_file:
                 st.success(
                     "No catalog issues found."
                 )
-                
+
+            # ---------------------------------------------------------
+            # Product List - Bulk Selection
+            # ---------------------------------------------------------
+
             rows = []
 
             for product in products:
 
-                rows.append(
-                    {
-                        "Product ID": product.product_id,
-                        "Title": product.title,
-                        "Vendor": product.vendor,
-                        "Category": product.category,
-                        "Price": product.price,
-                        "Status": product.status,
-                        "Product URL": product.product_url or ""
-                    }
+                # Get all catalog issues for this product
+                product_issues = [
+                    issue["issue"]
+                    for issue in health_issues
+                    if issue["product_id"] == product.product_id
+                ]
+
+                # Combine all issues into one column
+                issues_text = (
+                    " · ".join(product_issues)
+                    if product_issues
+                    else "None"
                 )
 
+                # Create a short description preview
+                description = product.description or ""
+
+                if len(description) > 100:
+                    description_preview = description[:100] + "..."
+                else:
+                    description_preview = description
+
+                rows.append(
+                    {
+                        "Select": False,
+                        "Product ID": product.product_id,
+                        "Title": product.title,
+                        "Description": description_preview,
+                        "Issues": issues_text
+                    }
+                )
             df = pd.DataFrame(rows)
 
             st.subheader("Product List")
 
-            st.dataframe(
+            edited_df = st.data_editor(
                 df,
-                width="stretch"
+                width="stretch",
+                hide_index=True,
+                disabled=[
+                    "Product ID",
+                    "Title",
+                    "Description",
+                    "Issues"
+                ],
+                column_config={
+                    "Select": st.column_config.CheckboxColumn(
+                        "Select",
+                        help="Select product for bulk AI actions",
+                        default=False
+                    ),
+                    "Product ID": None,
+                    "Title": st.column_config.TextColumn(
+                        "Title"
+                    ),
+                    "Description": st.column_config.TextColumn(
+                        "Description"
+                    ),
+                    "Issues": st.column_config.TextColumn(
+                        "Issues"
+                    )
+                },
+                key="product_list_editor"
             )
+#Next step: capture the checked products
+
+#Immediately after the closing ) of st.data_editor(), add:
+            selected_rows = edited_df[
+                edited_df["Select"] == True
+            ]
+
+            selected_product_ids = selected_rows[
+                "Product ID"
+            ].tolist()
+
+            selected_products = [
+                product
+                for product in products
+                if product.product_id in selected_product_ids
+            ]            
 
             #Begin
-            
-            # End       
+#Added 08/28/26
+            if st.button(
+                "Generate AI Description for Selected Products",
+                disabled=len(selected_products) == 0
+            ):
 
-            st.subheader("Select Product")
+                with st.spinner(
+                    f"Generating AI descriptions for "
+                    f"{len(selected_products)} selected product(s)..."
+                ):
+
+                    for product in selected_products:
+
+                        description_key = (
+                            f"generated_desc_{product.product_id}"
+                        )
+
+                        st.session_state[
+                            description_key
+                        ] = generate_description_api(
+                            product
+                        )
+
+                st.success(
+                    f"Generated AI descriptions for "
+                    f"{len(selected_products)} product(s)."
+                )
+# 
+# Added 08/28/26      # End 
+# Added 08/29/26
+##################################################
+# Bulk SEO Tag Generation
+##################################################
+
+            if st.button(
+                "Generate SEO Tags for Selected Products",
+                disabled=len(selected_products) == 0
+            ):
+
+                with st.spinner(
+                    f"Generating SEO tags for "
+                    f"{len(selected_products)} selected product(s)..."
+                ):
+
+                    for product in selected_products:
+
+                        tag_key = (
+                            f"generated_tags_{product.product_id}"
+                        )
+
+                        st.session_state[
+                            tag_key
+                        ] = generate_tags_api(
+                            product
+                        )
+
+                st.success(
+                    f"Generated SEO tags for "
+                    f"{len(selected_products)} product(s)."
+                )
+# Added 08/29/26      # End
+# Added 08/29/26 II
+##################################################
+# Generate Product Type for Selected Products
+##################################################
+
+            if st.button(
+                "Generate Product Type for Selected Products",
+                disabled=len(selected_products) == 0
+            ):
+
+                with st.spinner(
+                    f"Generating Product Types for "
+                    f"{len(selected_products)} selected product(s)..."
+                ):
+
+                    for product in selected_products:
+
+                        product_type_key = (
+                            f"generated_product_type_{product.product_id}"
+                        )
+
+                        st.session_state[
+                            product_type_key
+                        ] = generate_product_type_api(
+                            product
+                        )
+
+                st.success(
+                    f"Generated Product Types for "
+                    f"{len(selected_products)} product(s)."
+                )
+# Added 08/29/26 II # End
+
+##################################################
+# Product Detail / Product Selection
+##################################################
+
+            st.divider()
 
             product_options = {
                 f"{p.product_id} | {p.title}": p.product_id
                 for p in products
             }
 
-            # selected_product = next(
-            selected_display = st.selectbox(
-                "Product",
-                list(product_options.keys())
-            )
+            detail_col, product_col = st.columns([1, 2])
 
-    #     (
-            #         p for p in products
-            #         if p.product_id == selected_product_id
-            #     ),
-            #     None
-            # )
+            with detail_col:
+                st.subheader("Product Detail")
+
+            with product_col:
+                selected_display = st.selectbox(
+                    "Select Product",
+                    list(product_options.keys())
+                )
+
             selected_product_id = product_options[selected_display]
 
             selected_product = next(
@@ -440,8 +605,6 @@ if uploaded_file:
             )
 
             if selected_product:
-                st.subheader("Product Detail")
-
                 st.write(f"Product ID: {selected_product.product_id}")
                 st.write(f"Title: {selected_product.title}")
                 st.write(f"Description: {selected_product.description}")
@@ -566,30 +729,6 @@ if uploaded_file:
 
                 if generated_key in st.session_state:
 
-                    st.subheader(
-                        "AI Suggested Description"
-                    )
-
-                    st.text_area(
-                        "",
-                        value=st.session_state[generated_key],
-                        height=180,
-                        key=f"display_desc_{selected_product.product_id}"
-                    )
-
-                    if st.button(
-                        "Accept Description",
-                        key=f"accept_desc_{selected_product.product_id}"
-                    ):
-
-                        selected_product.description = (
-                            st.session_state[generated_key]
-                        )
-
-                        st.success(
-                            "Description updated. Click Save Changes."
-                        )
-
                     if not selected_product.image_url:
 
                         st.subheader(
@@ -606,22 +745,22 @@ if uploaded_file:
                         key=f"review_{selected_product.product_id}"
                     ):
 
-                        try:
-
-                            review = review_product(selected_product)
+                        review = review_product(selected_product)
+                        st.subheader(
+                            "AI Suggestions"
+                        )
+                        st.json(review)
 
                             # st.write("Type:", type(review))
                             # st.write(review)
 
-                        except Exception as e:
+                        import traceback
+                        st.exception(e)
 
-                            import traceback
-                            st.exception(e)
-
-                            st.code(
-                                traceback.format_exc(),
-                                language="python"
-                            )
+                        st.code(
+                            traceback.format_exc(),
+                            language="python"
+                        )
 
                         # st.write("Function:", review_product)
                         # st.write("Module:", review_product.__module__)
@@ -680,6 +819,15 @@ if uploaded_file:
                     f"generated_tags_{selected_product.product_id}"
                 )
 
+                description_draft_key = (
+                    f"description_draft_{selected_product.product_id}"
+                )
+
+                if description_draft_key not in st.session_state:
+                    st.session_state[description_draft_key] = (
+                        selected_product.description or ""
+                    )
+
                 if st.button(
                     "Generate AI Description",
                     key=f"generate_desc_{selected_product.product_id}"
@@ -691,12 +839,12 @@ if uploaded_file:
 
                         st.session_state[
                             description_key
-                        ] = generate_description(
+                        ] = generate_description_api(
                             selected_product
                         )
 
                 ##################################################
-                # Show Suggested Description
+                # Show / Accept Suggested Description
                 ##################################################
 
                 if description_key in st.session_state:
@@ -712,6 +860,26 @@ if uploaded_file:
                         key=f"ai_desc_{selected_product.product_id}"
                     )
 
+                    if st.button(
+                        "Accept Description",
+                        key=f"accept_desc_{selected_product.product_id}"
+                    ):
+
+                        accepted_description = description
+
+                        ##08/29/26selected_product.description = accepted_description
+                        st.session_state[
+                            description_draft_key
+                        ] = accepted_description
+
+                        st.session_state[
+                            f"description_{selected_product.product_id}"
+                        ] = accepted_description
+
+                        del st.session_state[description_key]
+
+                        st.rerun()
+
                 if st.button(
                     "✨ Generate SEO Tags",
                     key=f"generate_tags_{selected_product.product_id}"
@@ -721,15 +889,16 @@ if uploaded_file:
                         "Generating SEO tags..."
                     ):
 
-                        temp_product = selected_product
+                        temp_product = selected_product.model_copy(deep=True)
 
                         temp_product.description = (
-                            description
-                            if "description" in locals()
-                            else selected_product.description
+                            st.session_state.get(
+                                description_key,
+                                selected_product.description
+                            )
                         )
 
-                        st.session_state[tag_key] = generate_tags(
+                        st.session_state[tag_key] = generate_tags_api(
                             temp_product
                         )
 
@@ -745,17 +914,28 @@ if uploaded_file:
                 # Description
                 ##################################################
 
-                description = st.text_area(
-                    "Description",
-                    value=(
-                        st.session_state.get(
-                            description_key,
-                            selected_product.description or ""
-                        )
-                    ),
-                    height=220
+                description_draft_key = (
+                    f"description_draft_{selected_product.product_id}"
                 )
 
+                if description_draft_key not in st.session_state:
+                    st.session_state[description_draft_key] = (
+                        selected_product.description or ""
+                    )
+##                description = st.text_area(
+##                    "Description",
+##                    value=selected_product.description or "",
+##                    height=220,
+##                    key=f"description_{selected_product.product_id}"
+##                )
+                description = st.text_area(
+                    "Description",
+                    value=st.session_state[description_draft_key],
+                    height=220,
+                    key=f"description_{selected_product.product_id}"
+                )
+
+                st.session_state[description_draft_key] = description
                 ##################################################
                 # Product URL
                 ##################################################
@@ -780,9 +960,49 @@ if uploaded_file:
                 # Product Type
                 ##################################################
 
+                product_type_key = (
+                    f"generated_product_type_{selected_product.product_id}"
+                )
+
+                editable_product_type_key = (
+                    f"product_type_{selected_product.product_id}"
+                )
+
+                ##################################################
+                # Show / Accept Suggested Product Type
+                ##################################################
+
+                if product_type_key in st.session_state:
+
+                    st.subheader("AI Suggested Product Type")
+
+                    suggested_product_type = st.session_state[
+                        product_type_key
+                    ]
+
+                    st.write(suggested_product_type)
+
+                    if st.button(
+                        "Accept Product Type",
+                        key=f"accept_product_type_{selected_product.product_id}"
+                    ):
+
+                        st.session_state[
+                            editable_product_type_key
+                        ] = suggested_product_type
+
+                        del st.session_state[product_type_key]
+
+                        st.rerun()
+
+                ##################################################
+                # Editable Product Type
+                ##################################################
+
                 product_type = st.text_input(
                     "Product Type",
-                    value=selected_product.product_type or ""
+                    value=selected_product.product_type or "",
+                    key=editable_product_type_key
                 )
 
                 ##################################################

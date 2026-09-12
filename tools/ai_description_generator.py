@@ -1,36 +1,44 @@
+import os
+from openai import OpenAI
 from models.product import Product
+from dotenv import load_dotenv
 
+load_dotenv(override=True)
+
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 def generate_description(product: Product) -> str:
 
-    title = product.title or "Product"
+    prompt = f"""
+You are an expert e-commerce product content writer.
 
-    vendor = product.vendor or "Unknown Brand"
+Generate a clear, compelling, customer-friendly product description
+using ONLY the product information provided below.
 
-    category = product.category or "General"
+Product information:
+Title: {product.title or ""}
+Vendor: {product.vendor or ""}
+Category: {product.category or ""}
+Product Type: {product.product_type or ""}
+Existing Description: {product.description or ""}
+Tags: {", ".join(product.tags) if product.tags else ""}
 
-    product_type = product.product_type or "Product"
-
-    tags = ", ".join(product.tags) if product.tags else ""
-
-    description = f"""
-{title} by {vendor} is a premium {product_type.lower()} designed for customers looking for high-quality {category.lower()} products.
-
-This product helps improve overall hair health while providing excellent performance and long-lasting results. It is suitable for everyday use and works well for customers seeking healthier, softer and more manageable hair.
-
-Key Benefits
-
-• Nourishes and protects hair
-• Helps improve appearance and texture
-• Suitable for regular use
-• High quality ingredients
-• Trusted {vendor} quality
-
-Recommended For
-
-Customers looking for reliable {category.lower()} solutions.
-
-Keywords: {tags}
+Requirements:
+- Write 1-2 concise paragraphs.
+- Clearly explain what the product is and its key benefits.
+- Use professional e-commerce language.
+- Improve weak or incomplete source descriptions.
+- Do not invent ingredients, specifications, certifications, claims,
+  or benefits that are not supported by the supplied product data.
+- Do not include SEO tags or headings.
+- Return only the improved product description.
 """
 
-    return description.strip()
+    response = client.responses.create(
+        model="gpt-5.6",
+        input=prompt
+    )
+
+    return response.output_text.strip()

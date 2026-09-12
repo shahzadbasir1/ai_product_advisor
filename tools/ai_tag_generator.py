@@ -1,90 +1,44 @@
+from openai import OpenAI
 from models.product import Product
+
+client = OpenAI()
 
 
 def generate_tags(product: Product):
 
-    tags = []
+    prompt = f"""
+You are an e-commerce SEO specialist.
 
-    ##################################################
-    # Category
-    ##################################################
+Generate SEO-friendly tags for the following product.
 
-    if product.category:
-        tags.append(product.category)
+Product information:
+Title: {product.title or ""}
+Vendor: {product.vendor or ""}
+Category: {product.category or ""}
+Product Type: {product.product_type or ""}
+Description: {product.description or ""}
 
-    ##################################################
-    # Product Type
-    ##################################################
+Requirements:
+- Generate 5-10 concise SEO tags.
+- Base every tag only on the supplied product information.
+- Include relevant product type, category, use case, and customer-search terms.
+- Do not invent product attributes or claims.
+- Avoid duplicate or near-duplicate tags.
+- Do not use hashtags.
+- Return ONLY a comma-separated list of tags.
+"""
 
-    if product.product_type:
-        tags.append(product.product_type)
+    response = client.responses.create(
+        model="gpt-5.6",
+        input=prompt
+    )
 
-    ##################################################
-    # Vendor
-    ##################################################
+    raw_tags = response.output_text.strip()
 
-    if product.vendor:
-        tags.append(product.vendor)
+    tags = [
+        tag.strip()
+        for tag in raw_tags.split(",")
+        if tag.strip()
+    ]
 
-    ##################################################
-    # Title keywords
-    ##################################################
-
-    title = (product.title or "").lower()
-
-    keyword_map = {
-
-        "shampoo": "Shampoo",
-        "conditioner": "Conditioner",
-        "hair": "Hair Care",
-        "moisture": "Moisturizing",
-        "gold": "Premium",
-        "repair": "Repair",
-        "damage": "Damaged Hair",
-        "dry": "Dry Hair",
-        "frizz": "Anti-Frizz",
-        "curl": "Curly Hair",
-        "volume": "Volume",
-        "color": "Color Protection"
-
-    }
-
-    for keyword, tag in keyword_map.items():
-
-        if keyword in title:
-
-            tags.append(tag)
-
-    ##################################################
-    # Description keywords
-    ##################################################
-
-    description = (
-        product.description or ""
-    ).lower()
-
-    if "hydrate" in description:
-        tags.append("Hydrating")
-
-    if "repair" in description:
-        tags.append("Repair")
-
-    if "soft" in description:
-        tags.append("Soft Hair")
-
-    if "shine" in description:
-        tags.append("Shiny Hair")
-
-    ##################################################
-    # Remove duplicates
-    ##################################################
-
-    unique_tags = []
-
-    for tag in tags:
-
-        if tag not in unique_tags:
-
-            unique_tags.append(tag)
-
-    return unique_tags
+    return tags

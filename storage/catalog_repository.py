@@ -1,10 +1,27 @@
+from models.product import Product
 import json
 import os
 from typing import List
 
-from models.product import Product
+def load_catalog(file_path):
 
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(file_path)
 
+    with open(
+        file_path,
+        "r",
+        encoding="utf-8"
+    ) as f:
+
+        data = json.load(f)
+
+    products = [
+        Product(**item)
+        for item in data
+    ]
+
+    return products
 
 def save_catalog(products, file_path):
 
@@ -47,29 +64,6 @@ def save_catalog(products, file_path):
         print(f.read())
 
     print("=" * 80)
-
-def save_catalog_old(products, file_path):
-
-    data = []
-
-    for product in products:
-
-        data.append(
-            product.model_dump()
-        )
-
-    with open(
-        file_path,
-        "w",
-        encoding="utf-8"
-    ) as f:
-
-        json.dump(
-            data,
-            f,
-            indent=2
-        )
-
 
 def save_uploaded_catalog(
     uploaded_file
