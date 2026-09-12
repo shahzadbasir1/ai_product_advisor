@@ -15,9 +15,6 @@ from storage.catalog_repository import (
 from analysis.product_score import (
     calculate_product_score
 )
-from tools.ai_description_generator import generate_description
-from tools.ai_tag_generator import generate_tags
-from tools.ai_product_type_generator import generate_product_type
 from tools.ai_image_search import get_image_search_url
 from tools.ai_product_reviewer import review_product
 from analysis.catalog_score import calculate_catalog_score
