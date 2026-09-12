@@ -31,3 +31,16 @@ Thumbs.db
 # Temporary / backup files
 *~
 *.bak
+
+# Local development artifacts / backup copies
+backend.txt
+backend/
+services/
+run the app.txt
+tree.txt
+tools/* copy.py
+
+# Duplicate local test catalogs
+data/catalogs/test_products (*).json
+data/catalogs/test_products_1.json
+test_products (*).json
