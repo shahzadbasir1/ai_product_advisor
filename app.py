@@ -966,6 +966,23 @@ if uploaded_file:
                 )
 
                 ##################################################
+                # Generate AI Product Type
+                ##################################################
+
+                if st.button(
+                    "✨ Generate Product Type",
+                    key=f"generate_product_type_{selected_product.product_id}"
+                ):
+
+                    with st.spinner("Generating product type..."):
+
+                        st.session_state[
+                            product_type_key
+                        ] = generate_product_type_api(
+                            selected_product
+                        )
+
+                ##################################################
                 # Show / Accept Suggested Product Type
                 ##################################################
 
