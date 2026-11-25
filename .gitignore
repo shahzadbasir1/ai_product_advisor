@@ -44,3 +44,12 @@ tools/* copy.py
 data/catalogs/test_products (*).json
 data/catalogs/test_products_1.json
 test_products (*).json
+
+# Local ChromaDB vector store
+data/chroma/
+
+# Local/test merchant knowledge artifacts
+data/knowledge/oribe/
+data/knowledge/test_brand_guidelines.pdf
+data/knowledge/test_brand_guidelines.docx
+

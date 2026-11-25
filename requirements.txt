@@ -8,3 +8,7 @@ Pillow
 fastapi
 uvicorn
 langgraph
+chromadb
+python-multipart
+pypdf
+python-docx
