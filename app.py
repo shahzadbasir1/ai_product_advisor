@@ -25,7 +25,8 @@ from api_client import (
     generate_product_type_api,
     upload_knowledge_document_api,
     list_knowledge_documents_api,
-    load_shopify_products_api
+    load_shopify_products_api,
+    update_shopify_product_api,
 )
 
 import inspect
@@ -1217,11 +1218,65 @@ if products:
                     st.rerun()
 
             else:
-                st.info(
-                    "Shopify catalog is connected in read-only mode. "
-                    "AI suggestions can be generated and reviewed here, "
-                    "but writing changes back to Shopify will be added in Phase 5."
+                st.subheader("Update Shopify")
+
+                st.caption(
+                    "Review the Description, Product Type, and SEO Tags above. "
+                    "Only these fields will be written to Shopify."
                 )
+
+                update_shopify_clicked = st.button(
+                    "🛍️ Update Shopify",
+                    key=f"update_shopify_{selected_product.product_id}",
+                    type="primary",
+                    use_container_width=True,
+                )
+
+                if update_shopify_clicked:
+
+                    shopify_tags = [
+                        tag.strip()
+                        for tag in tag_string.split(",")
+                        if tag.strip()
+                    ]
+
+                    try:
+                        with st.spinner("Updating product in Shopify..."):
+
+                            updated_product = update_shopify_product_api(
+                                product_id=selected_product.product_id,
+                                description=description.strip(),
+                                product_type=product_type.strip(),
+                                tags=shopify_tags,
+                            )
+
+                        selected_product.description = (
+                            updated_product["description"]
+                        )
+
+                        selected_product.product_type = (
+                            updated_product["product_type"]
+                        )
+
+                        selected_product.tags = (
+                            updated_product["tags"]
+                        )
+
+                        if description_key in st.session_state:
+                            del st.session_state[description_key]
+
+                        if tag_key in st.session_state:
+                            del st.session_state[tag_key]
+
+                        st.success(
+                            f"Shopify updated successfully: "
+                            f"{selected_product.title}"
+                        )
+
+                    except Exception as exc:
+                        st.error(
+                            f"Shopify update failed: {exc}"
+                        )
 
     except Exception:
         st.exception(traceback.format_exc())

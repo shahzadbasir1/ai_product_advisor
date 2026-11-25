@@ -3,7 +3,7 @@ from ingestion.shopify_loader import (
 )
 
 
-products = load_shopify_products(limit=5)
+products = load_shopify_products(limit=10)
 
 print("Products loaded:", len(products))
 print()

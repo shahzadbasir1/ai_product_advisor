@@ -106,3 +106,36 @@ def load_shopify_products_api(limit=50):
     data = response.json()
 
     return data["products"]
+
+def update_shopify_product_api(
+    product_id,
+    description=None,
+    product_type=None,
+    tags=None,
+):
+    """
+    Update approved AI-enrichment fields for a Shopify product.
+    """
+
+    payload = {}
+
+    if description is not None:
+        payload["description"] = description
+
+    if product_type is not None:
+        payload["product_type"] = product_type
+
+    if tags is not None:
+        payload["tags"] = tags
+
+    response = requests.put(
+        f"{API_BASE_URL}/shopify/products/{product_id}",
+        json=payload,
+        timeout=60,
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    return data["product"]

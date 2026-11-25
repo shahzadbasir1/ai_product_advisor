@@ -241,3 +241,179 @@ def load_shopify_products(
         products.append(product)
 
     return products
+
+def update_shopify_product(
+    product_id: str,
+    description: str | None = None,
+    product_type: str | None = None,
+    tags: list[str] | None = None,
+) -> Product:
+    """
+    Update selected AI-enrichment fields for a Shopify product.
+
+    Only fields explicitly provided are sent to Shopify.
+    This prevents unrelated product data from being overwritten.
+    """
+
+    shop = os.getenv("SHOPIFY_STORE_DOMAIN")
+
+    if not shop:
+        raise ValueError(
+            "SHOPIFY_STORE_DOMAIN is not configured."
+        )
+
+    access_token = get_shopify_access_token()
+
+    graphql_url = (
+        f"https://{shop}/admin/api/"
+        f"{SHOPIFY_API_VERSION}/graphql.json"
+    )
+
+    mutation = """
+    mutation UpdateProduct($product: ProductUpdateInput!) {
+      productUpdate(product: $product) {
+        product {
+          id
+          title
+          handle
+          description
+          vendor
+          productType
+          status
+          tags
+          totalInventory
+
+          category {
+            id
+            name
+            fullName
+          }
+
+          priceRangeV2 {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+
+          featuredMedia {
+            ... on MediaImage {
+              image {
+                url
+                altText
+              }
+            }
+          }
+
+          variants(first: 10) {
+            nodes {
+              id
+              title
+              sku
+              price
+              inventoryQuantity
+            }
+          }
+        }
+
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+
+    product_input = {
+        "id": product_id
+    }
+
+    if description is not None:
+        product_input["descriptionHtml"] = description
+
+    if product_type is not None:
+        product_input["productType"] = product_type
+
+    if tags is not None:
+        product_input["tags"] = tags
+
+    response = requests.post(
+        graphql_url,
+        headers={
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": access_token,
+        },
+        json={
+            "query": mutation,
+            "variables": {
+                "product": product_input
+            },
+        },
+        timeout=30,
+    )
+
+    response.raise_for_status()
+
+    result = response.json()
+
+    if result.get("errors"):
+        raise RuntimeError(
+            f"Shopify GraphQL errors: {result['errors']}"
+        )
+
+    update_result = result["data"]["productUpdate"]
+
+    if update_result["userErrors"]:
+        messages = [
+            error["message"]
+            for error in update_result["userErrors"]
+        ]
+
+        raise RuntimeError(
+            "Shopify product update failed: "
+            + "; ".join(messages)
+        )
+
+    shopify_product = update_result["product"]
+
+    variants = [
+        ProductVariant(
+            sku=variant.get("sku") or "",
+            name=variant.get("title") or "",
+            price=float(variant.get("price") or 0),
+        )
+        for variant in shopify_product["variants"]["nodes"]
+    ]
+
+    category = shopify_product.get("category")
+
+    featured_media = shopify_product.get("featuredMedia")
+
+    image_url = None
+
+    if featured_media and featured_media.get("image"):
+        image_url = featured_media["image"].get("url")
+
+    return Product(
+        product_id=shopify_product["id"],
+        title=shopify_product.get("title") or "",
+        description=shopify_product.get("description") or "",
+        vendor=shopify_product.get("vendor") or "",
+        category=(
+            category.get("name", "")
+            if category
+            else ""
+        ),
+        price=float(
+            shopify_product["priceRangeV2"]
+            ["minVariantPrice"]["amount"]
+        ),
+        status=shopify_product.get("status") or "",
+        handle=shopify_product.get("handle"),
+        product_type=shopify_product.get("productType"),
+        tags=shopify_product.get("tags") or [],
+        inventory_qty=shopify_product.get("totalInventory"),
+        image_url=image_url,
+        variants=variants,
+        source_catalog_id=f"shopify:{shop}",
+    )

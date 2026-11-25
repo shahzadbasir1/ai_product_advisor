@@ -1,6 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from models.product import Product
-from ingestion.shopify_loader import load_shopify_products
+from ingestion.shopify_loader import (
+    load_shopify_products,
+    update_shopify_product,
+)    
 
 from tools.ai_description_generator import generate_description
 
@@ -10,11 +13,18 @@ from tools.ai_tag_generator import generate_tags
 from pathlib import Path
 import shutil
 
+from pydantic import BaseModel
+
 #from rag.knowledge_base import index_document
 from rag.knowledge_base import (
     index_document,
     list_knowledge_documents
 )
+
+class ShopifyProductUpdateRequest(BaseModel):
+    description: str | None = None
+    product_type: str | None = None
+    tags: list[str] | None = None
 
 app = FastAPI(
     title="AI Product Advisor API",
@@ -37,7 +47,47 @@ def health():
         "status": "healthy"
     }
 
+@app.put("/shopify/products/{product_id:path}")
+def update_shopify_product_endpoint(
+    product_id: str,
+    request: ShopifyProductUpdateRequest,
+):
+    """
+    Update approved AI-enrichment fields for a Shopify product.
+    """
+
+    if (
+        request.description is None
+        and request.product_type is None
+        and request.tags is None
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="At least one product field must be provided.",
+        )
+
+    try:
+        product = update_shopify_product(
+            product_id=product_id,
+            description=request.description,
+            product_type=request.product_type,
+            tags=request.tags,
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update Shopify product: {exc}",
+        )
+
+    return {
+        "source": "shopify",
+        "message": "Shopify product updated successfully.",
+        "product": product.model_dump(mode="json"),
+    }
+
 @app.get("/shopify/products")
+
 def get_shopify_products(limit: int = 50):
 
     if limit < 1 or limit > 250:
